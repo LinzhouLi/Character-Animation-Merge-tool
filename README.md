@@ -20,12 +20,12 @@
 
 人物坐姿模型
 
-![image-20220220195109518](img\sit.png)
+![image-20220220195109518](./img/sit.png)
 
 人物站姿鼓掌模型
 
-![image-20220220195239579](img\clap.png)
+![image-20220220195239579](./img/clap.png)
 
 合并后：坐姿鼓掌
 
-![image-20220220195350012](img\sit-clap.png)
+![image-20220220195350012](./img/sit-clap.png)
