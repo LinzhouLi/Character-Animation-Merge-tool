@@ -19,9 +19,9 @@
 			import { OrbitControls } from './js/THREE/examples/jsm/controls/OrbitControls.js';
 			import { GLTFLoader } from './js/THREE/examples/jsm/loaders/GLTFLoader.js';
 			import { GLTFExporter } from './js/THREE/examples/jsm/exporters/GLTFExporter.js';
-            import { AnimationTool } from './js/mergeAnimation.js'
+            import { AnimationTool, AnimationJSONTool } from './js/mergeAnimation.js'
 
-			let renderer, scene, camera, animationMixer, clock, link;
+			let renderer, scene, camera, clock, link;
 
 			init();
 
@@ -51,7 +51,7 @@
 
                 // 视角控制
 				const controls = new OrbitControls( camera, renderer.domElement );
-				controls.addEventListener( 'change', render ); // use if there is no animation loop
+				// controls.addEventListener( 'change', render ); // use if there is no animation loop
 
                 // 光线
 				scene.add( new THREE.AmbientLight( 0xffffff, 0.2 ) );
@@ -64,48 +64,47 @@
                 scene.add( axesHelper );
 
                 // 读取模型
-				new GLTFLoader().load( "./model/male_sit.glb", function ( gltf ) {
-
+				new GLTFLoader().load( "./model/merged.glb", function ( gltf ) {
+					
 					scene.add( gltf.scene );
 					const baseBoneIndices = [0, 1, 2, 3, 26, 27, 28, 29, 30, 31, 32, 33]; // 脊椎,盆骨,以及下肢的骨骼序号
-					let tool = new AnimationTool(gltf, baseBoneIndices);
-                    animationMixer = new THREE.AnimationMixer(gltf.scene.children[2]);
+					let tool = new AnimationJSONTool( gltf.scene.children[0].children[2], gltf.animations );
+					tool.getAllAnimationJSON().then( (r) => saveString(JSON.stringify(r), 'animations.json') );
+					render();
 
-					new GLTFLoader().load( "./model/male_cheer.glb", function ( gltf ) {
+				});
 
-						tool.mergeAnimation( gltf );
+				// new GLTFLoader().load( "./model/male_sit.glb", function ( gltf ) {
 
-						new GLTFLoader().load( "./model/male_clap.glb", function ( gltf ) {
+				// 	scene.add(gltf.scene);
+				// 	const baseBoneIndices = [0, 1, 2, 3, 26, 27, 28, 29, 30, 31, 32, 33]; // 脊椎,盆骨,以及下肢的骨骼序号
+				// 	let tool = new AnimationTool(gltf.scene.children[2], gltf.animations[0], baseBoneIndices);
 
-							tool.mergeAnimation( gltf );
+				// 	new GLTFLoader().load( "./model/male_cheer.glb", function ( gltf ) {
 
-							new GLTFLoader().load( "./model/male_idle.glb", function ( gltf ) {
+				// 		tool.mergeAnimation( gltf.animations[0] );
 
-								tool.addAnimation(gltf);
+				// 		new GLTFLoader().load( "./model/male_clap.glb", function ( gltf ) {
 
-								tool.playAnimation(animationMixer, 2);
-								play();
+				// 			tool.mergeAnimation( gltf.animations[0] );
 
-								// 导出
-								const exporter = new GLTFExporter();
-								const options = {
-									binary: true,
-									animations: tool.getAnimations()
-								};
-								exporter.parse(
-									gltf.scene,
-									result => saveArrayBuffer(result, 'merged.glb'),
-									error => console.error(error),
-									options
-								);
+				// 			new GLTFLoader().load( "./model/male_idle.glb", function ( gltf ) {
 
-							});
+				// 				tool.addAnimation( gltf.animations[0] );
 
-						});
+				// 				// tool.playAnimation(0);
+				// 				render();
 
-                    } );
+				// 				// 导出
+				// 				saveGLB(gltf.scene, tool.getAnimations());
 
-				} );
+				// 			});
+
+				// 		});
+
+                //     } );
+
+				// } );
 
 				window.addEventListener( 'resize', onWindowResize );
 
@@ -118,32 +117,44 @@
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
 
-				render();
-
 			}
 
 			function render() {
 
 				renderer.render( scene, camera );
+				// animationMixer.update( clock.getDelta() * animationMixer.timeScale );
+				requestAnimationFrame( render );
 
 			}
 
-            // 播放动画
-            function play() {
-                setInterval( function () {
-
-                    animationMixer.update(0.01);
-                    render();
-
-                }, 10);
-            }
-
 			// 文件保存
+			function saveGLB( scene, animations ) {
+
+				const exporter = new GLTFExporter();
+				const options = {
+					binary: true,
+					animations: animations
+				};
+				exporter.parse(
+					scene,
+					result => saveArrayBuffer(result, 'merged.glb'),
+					error => console.error(error),
+					options
+				);
+
+			}
+
 			function save( blob, filename ) {
 
 				link.href = URL.createObjectURL( blob );
 				link.download = filename;
 				link.click();
+
+			}
+
+			function saveString( text, filename ) {
+
+				save( new Blob( [ text ], { type: 'text/plain' } ), filename );
 
 			}
 
